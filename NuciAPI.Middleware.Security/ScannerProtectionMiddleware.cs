@@ -94,6 +94,7 @@ namespace NuciAPI.Middleware.Security
             CreateExactPathRegex("/graphql/api"),
             CreateExactPathRegex("/hibernate.cfg.xml"),
             CreateExactPathRegex("/icons/ubuntu-logo.png"),
+            CreateExactPathRegex("/js/config.js"),
             CreateExactPathRegex("/js/lkk_ch.js"),
             CreateExactPathRegex("/js/twint_ch.js"),
             CreateExactPathRegex("/local_settings.py"),
@@ -126,7 +127,6 @@ namespace NuciAPI.Middleware.Security
             CreateExactPathRegex("/url"),
             CreateExactPathRegex("/v2/_catalog"),
             CreateExactPathRegex("/web.config"),
-            CreateExactPathRegex("/wp-json/"),
             CreateRawRegex("/docker-compose\\.y[a]?ml"),
             CreateRawRegex("^.*::\\$DATA$"),
             CreateRawRegex("^.*/_environment$"),
@@ -159,7 +159,7 @@ namespace NuciAPI.Middleware.Security
             CreateRawRegex("^/static/style/[^/]*/index.js$"),
             CreateRawRegex("^/storage/logs/.*\\.log$"),
             CreateRawRegex("^/var/log/.*$"),
-            CreateRawRegex("^/wp-content/.*$"),
+            CreateRawRegex("^/wp-(content|json)/.*$"),
         ];
 
         private static readonly Regex[] ForbiddenQueryPatterns =
