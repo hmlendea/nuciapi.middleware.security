@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <PackageReference Include="NuciAPI.Middleware" Version="2.0.1" />
+    <PackageReference Include="NuciWeb.HTTP" Version="1.7.0" />
   </ItemGroup>
 
 
