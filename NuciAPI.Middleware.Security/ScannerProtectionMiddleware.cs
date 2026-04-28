@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -6,6 +7,8 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
+using NuciExtensions;
+using NuciWeb.HTTP;
 
 namespace NuciAPI.Middleware.Security
 {
@@ -34,6 +37,11 @@ namespace NuciAPI.Middleware.Security
         private static readonly string[] ForbiddenFromHeaders =
         [
             "oai-searchbot(at)openai.com",
+        ];
+
+        private static readonly Regex[] ForbiddenHostnames =
+        [
+            CreateExactPathRegex("mail.uber-uk.online"),
         ];
 
         private static readonly Regex[] ForbiddenResourcePatterns =
@@ -267,6 +275,23 @@ namespace NuciAPI.Middleware.Security
                 ForbiddenClientHintsKeywords.Any(keyword => clientHints.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
             {
                 return true;
+            }
+
+            string ipAddress = GetClientIpAddress(request.HttpContext);
+            List<string> hostnames = NetworkUtils.GetHostnames(ipAddress);
+
+            if (!EnumerableExt.IsNullOrEmpty(hostnames))
+            {
+                foreach (Regex forbiddenHostnamePattern in ForbiddenHostnames)
+                {
+                    foreach (string hosntame in hostnames)
+                    {
+                        if (forbiddenHostnamePattern.IsMatch(path))
+                        {
+                            return true;
+                        }
+                    }
+                }
             }
 
             return false;
