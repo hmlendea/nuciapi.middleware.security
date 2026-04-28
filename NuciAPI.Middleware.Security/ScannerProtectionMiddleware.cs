@@ -312,7 +312,7 @@ namespace NuciAPI.Middleware.Security
         }
 
         private static string GetBannedIpAddressCacheKey(string clientIpAddress)
-            => $"nuciweb.middleware.banned-ip:{clientIpAddress}";
+            => $"nuciapi.middleware.banned-ip:{clientIpAddress}";
 
         private static Regex CreateExactPathRegex(string path)
             => CreateRawRegex($"^{Regex.Escape(path)}$");
