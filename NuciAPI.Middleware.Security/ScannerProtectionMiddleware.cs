@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -6,6 +7,8 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
+using NuciExtensions;
+using NuciWeb.HTTP;
 
 namespace NuciAPI.Middleware.Security
 {
@@ -36,9 +39,15 @@ namespace NuciAPI.Middleware.Security
             "oai-searchbot(at)openai.com",
         ];
 
+        private static readonly Regex[] ForbiddenHostnames =
+        [
+            CreateExactPathRegex("mail.uber-uk.online"),
+        ];
+
         private static readonly Regex[] ForbiddenResourcePatterns =
         [
             CreateExactPathRegex("/_ignition/execute-solution"),
+            CreateExactPathRegex("/_profiler"),
             CreateExactPathRegex("/.aws/config"),
             CreateExactPathRegex("/.aws/credentials"),
             CreateExactPathRegex("/.boto"),
@@ -48,8 +57,10 @@ namespace NuciAPI.Middleware.Security
             CreateExactPathRegex("/.netrc"),
             CreateExactPathRegex("/.npmrc"),
             CreateExactPathRegex("/.pgpass"),
+            CreateExactPathRegex("/.pypirc"),
             CreateExactPathRegex("/.streamlit/secrets.toml"),
             CreateExactPathRegex("/.travis.yml"),
+            CreateExactPathRegex("/.vercel/.env.production.local"),
             CreateExactPathRegex("/.well-known/security.txt"),
             CreateExactPathRegex("/@vite/env"),
             CreateExactPathRegex("/actuator/beans"),
@@ -57,6 +68,7 @@ namespace NuciAPI.Middleware.Security
             CreateExactPathRegex("/actuator/env"),
             CreateExactPathRegex("/actuator/health"),
             CreateExactPathRegex("/actuator/heapdump"),
+            CreateExactPathRegex("/api-keys.txt"),
             CreateExactPathRegex("/api/gql"),
             CreateExactPathRegex("/api/graphql"),
             CreateExactPathRegex("/app.config"),
@@ -73,7 +85,6 @@ namespace NuciAPI.Middleware.Security
             CreateExactPathRegex("/aws.env"),
             CreateExactPathRegex("/aws.json"),
             CreateExactPathRegex("/bot-connect.js"),
-            CreateExactPathRegex("/api-keys.txt"),
             CreateExactPathRegex("/config.json"),
             CreateExactPathRegex("/config/default.json"),
             CreateExactPathRegex("/config/server.js"),
@@ -123,12 +134,11 @@ namespace NuciAPI.Middleware.Security
             CreateExactPathRegex("/terraform.tfstate"),
             CreateExactPathRegex("/terraform.tfvars"),
             CreateExactPathRegex("/trace.axd"),
-            CreateExactPathRegex("/.vercel/.env.production.local"),
-            CreateExactPathRegex("/.pypirc"),
-            CreateExactPathRegex("/_profiler"),
             CreateExactPathRegex("/url"),
             CreateExactPathRegex("/v2/_catalog"),
             CreateExactPathRegex("/web.config"),
+            CreateExactPathRegex("/wp-admin/"),
+            CreateExactPathRegex("/wp-json/gravitysmtp/v1/tests/mock-data"),
             CreateRawRegex("/docker-compose\\.y[a]?ml"),
             CreateRawRegex("^.*::\\$DATA$"),
             CreateRawRegex("^.*/_environment$"),
@@ -166,8 +176,9 @@ namespace NuciAPI.Middleware.Security
 
         private static readonly Regex[] ForbiddenQueryPatterns =
         [
-            CreateRawRegex("(?:^|&)XDEBUG_SESSION_START=phpstorm(?:&|$)"),
+            CreateRawRegex("(?:^|&)page=gravitysmtp-settings(?:&|$)"),
             CreateRawRegex("(?:^|&)rest_route=/wp/v2/users/?(?:&|$)"),
+            CreateRawRegex("(?:^|&)XDEBUG_SESSION_START=phpstorm(?:&|$)"),
         ];
 
         private readonly IMemoryCache memoryCache = memoryCache ??
@@ -267,6 +278,23 @@ namespace NuciAPI.Middleware.Security
                 ForbiddenClientHintsKeywords.Any(keyword => clientHints.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
             {
                 return true;
+            }
+
+            string ipAddress = GetClientIpAddress(request.HttpContext);
+            List<string> hostnames = NetworkUtils.GetHostnames(ipAddress);
+
+            if (!EnumerableExt.IsNullOrEmpty(hostnames))
+            {
+                foreach (Regex forbiddenHostnamePattern in ForbiddenHostnames)
+                {
+                    foreach (string hosntame in hostnames)
+                    {
+                        if (forbiddenHostnamePattern.IsMatch(path))
+                        {
+                            return true;
+                        }
+                    }
+                }
             }
 
             return false;
