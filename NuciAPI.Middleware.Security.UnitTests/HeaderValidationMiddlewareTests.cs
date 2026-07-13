@@ -88,6 +88,79 @@ namespace NuciAPI.Middleware.UnitTests.Security
             Assert.That(wasInvoked, Is.True);
         }
 
+        [Test]
+        public void Given_NullNextDelegate_When_ConstructingMiddleware_Then_ThrowsArgumentNullException()
+            => Assert.That(
+                () => new HeaderValidationMiddleware(null!),
+                Throws.ArgumentNullException);
+
+        [Test]
+        public void Given_MissingClientIdHeader_When_InvokeAsync_Then_ThrowsBadHttpRequestException()
+        {
+            HeaderValidationMiddleware middleware = new(_ => Task.CompletedTask);
+            DefaultHttpContext context = CreateValidContext();
+            context.Request.Headers.Remove(NuciApiHeaderNames.ClientId);
+
+            Assert.ThrowsAsync<BadHttpRequestException>(async () => await middleware.InvokeAsync(context));
+        }
+
+        [Test]
+        public void Given_MissingRequestIdHeader_When_InvokeAsync_Then_ThrowsBadHttpRequestException()
+        {
+            HeaderValidationMiddleware middleware = new(_ => Task.CompletedTask);
+            DefaultHttpContext context = CreateValidContext();
+            context.Request.Headers.Remove(NuciApiHeaderNames.RequestId);
+
+            Assert.ThrowsAsync<BadHttpRequestException>(async () => await middleware.InvokeAsync(context));
+        }
+
+        [Test]
+        public void Given_MissingTimestampHeader_When_InvokeAsync_Then_ThrowsBadHttpRequestException()
+        {
+            HeaderValidationMiddleware middleware = new(_ => Task.CompletedTask);
+            DefaultHttpContext context = CreateValidContext();
+            context.Request.Headers.Remove(NuciApiHeaderNames.Timestamp);
+
+            Assert.ThrowsAsync<BadHttpRequestException>(async () => await middleware.InvokeAsync(context));
+        }
+
+        [Test]
+        public async Task Given_ClientIdOfExactlyFourCharacters_When_InvokeAsync_Then_InvokesNextDelegate()
+        {
+            bool wasInvoked = false;
+            HeaderValidationMiddleware middleware = new(_ =>
+            {
+                wasInvoked = true;
+                return Task.CompletedTask;
+            });
+            DefaultHttpContext context = CreateValidContext();
+            context.Request.Headers[NuciApiHeaderNames.ClientId] = "abcd";
+
+            await middleware.InvokeAsync(context);
+
+            Assert.That(wasInvoked, Is.True);
+        }
+
+        [Test]
+        public void Given_NonGuidRequestId_When_InvokeAsync_Then_ThrowsBadHttpRequestException()
+        {
+            HeaderValidationMiddleware middleware = new(_ => Task.CompletedTask);
+            DefaultHttpContext context = CreateValidContext();
+            context.Request.Headers[NuciApiHeaderNames.RequestId] = "NOT-A-VALID-GUID";
+
+            Assert.ThrowsAsync<BadHttpRequestException>(async () => await middleware.InvokeAsync(context));
+        }
+
+        [Test]
+        public void Given_MixedCaseRequestId_When_InvokeAsync_Then_ThrowsBadHttpRequestException()
+        {
+            HeaderValidationMiddleware middleware = new(_ => Task.CompletedTask);
+            DefaultHttpContext context = CreateValidContext();
+            context.Request.Headers[NuciApiHeaderNames.RequestId] = "550E8400-E29B-41D4-a716-446655440000";
+
+            Assert.ThrowsAsync<BadHttpRequestException>(async () => await middleware.InvokeAsync(context));
+        }
+
         private static DefaultHttpContext CreateValidContext()
         {
             DefaultHttpContext context = new();
