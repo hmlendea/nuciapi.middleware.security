@@ -12,11 +12,20 @@ using NuciWeb.HTTP;
 
 namespace NuciAPI.Middleware.Security
 {
-    internal sealed class ScannerProtectionMiddleware(
-        RequestDelegate next,
-        IMemoryCache memoryCache)
-        : NuciApiMiddleware(next)
+    internal sealed class ScannerProtectionMiddleware : NuciApiMiddleware
     {
+        internal ScannerProtectionMiddleware(
+            RequestDelegate next,
+            IMemoryCache memoryCache,
+            Func<string, List<string>> hostnameResolver)
+            : base(next)
+        {
+            this.memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
+            this.hostnameResolver = hostnameResolver ?? throw new ArgumentNullException(nameof(hostnameResolver));
+        }
+
+        public ScannerProtectionMiddleware(RequestDelegate next, IMemoryCache memoryCache)
+            : this(next, memoryCache, NetworkUtils.GetHostnames) { }
         private static readonly TimeSpan BanDuration = TimeSpan.FromHours(10);
 
         private static readonly string[] SafeVerbs = ["POST", "GET", "PUT", "DELETE", "PATCH"];
@@ -41,13 +50,18 @@ namespace NuciAPI.Middleware.Security
 
         private static readonly Regex[] ForbiddenHostnames =
         [
+            CreateExactPathRegex("formerlying.com"),
             CreateExactPathRegex("mail.uber-uk.online"),
+            CreateRawRegex(@"^.*\.dfri\.se$"),
+            CreateRawRegex(@".*tor[-.]exit.*"),
+            CreateRawRegex(@".*exit[-.]tor.*"),
         ];
 
         private static readonly Regex[] ForbiddenResourcePatterns =
         [
             CreateExactPathRegex("/_ignition/execute-solution"),
             CreateExactPathRegex("/_profiler"),
+            CreateExactPathRegex("/.amplifyrc"),
             CreateExactPathRegex("/.aws/config"),
             CreateExactPathRegex("/.aws/credentials"),
             CreateExactPathRegex("/.boto"),
@@ -63,18 +77,18 @@ namespace NuciAPI.Middleware.Security
             CreateExactPathRegex("/.vercel/.env.production.local"),
             CreateExactPathRegex("/.well-known/security.txt"),
             CreateExactPathRegex("/@vite/env"),
-            CreateExactPathRegex("/actuator/beans"),
-            CreateExactPathRegex("/actuator/configprops"),
-            CreateExactPathRegex("/actuator/env"),
-            CreateExactPathRegex("/actuator/health"),
-            CreateExactPathRegex("/actuator/heapdump"),
             CreateExactPathRegex("/api-keys.txt"),
+            CreateExactPathRegex("/api/configprops"),
+            CreateExactPathRegex("/api/env"),
             CreateExactPathRegex("/api/gql"),
             CreateExactPathRegex("/api/graphql"),
+            CreateExactPathRegex("/api/heapdump"),
             CreateExactPathRegex("/app.config"),
             CreateExactPathRegex("/app.toml"),
             CreateExactPathRegex("/app/"),
+            CreateExactPathRegex("/app/config/parameters.yml"),
             CreateExactPathRegex("/app/etc/local.xml"),
+            CreateExactPathRegex("/app/heapdump"),
             CreateExactPathRegex("/application.properties"),
             CreateExactPathRegex("/application.yml"),
             CreateExactPathRegex("/appsettings.json"),
@@ -86,24 +100,32 @@ namespace NuciAPI.Middleware.Security
             CreateExactPathRegex("/aws.json"),
             CreateExactPathRegex("/bot-connect.js"),
             CreateExactPathRegex("/config.json"),
+            CreateExactPathRegex("/config"),
             CreateExactPathRegex("/config/default.json"),
             CreateExactPathRegex("/config/server.js"),
+            CreateExactPathRegex("/configprops"),
             CreateExactPathRegex("/connectionstrings.config"),
             CreateExactPathRegex("/credentials.json"),
             CreateExactPathRegex("/credentials.yml.enc"),
             CreateExactPathRegex("/credentials"),
             CreateExactPathRegex("/css/support_parent.css"),
             CreateExactPathRegex("/currentsetting.htm"),
+            CreateExactPathRegex("/dcimgr"),
             CreateExactPathRegex("/debug/default/view"),
             CreateExactPathRegex("/developmentserver/metadatauploader"),
+            CreateExactPathRegex("/dnsmgr"),
             CreateExactPathRegex("/ecosystem.config.js"),
             CreateExactPathRegex("/ecp/Current/exporttool/microsoft.exchange.ediscovery.exporttool.application"),
             CreateExactPathRegex("/env"),
+            CreateExactPathRegex("/env.backup"),
+            CreateExactPathRegex("/env.txt"),
             CreateExactPathRegex("/error_log"),
             CreateExactPathRegex("/geoserver/web/"),
+            CreateExactPathRegex("/global/common/404.html"),
             CreateExactPathRegex("/go"),
             CreateExactPathRegex("/graphql"),
             CreateExactPathRegex("/graphql/api"),
+            CreateExactPathRegex("/heapdump"),
             CreateExactPathRegex("/hibernate.cfg.xml"),
             CreateExactPathRegex("/icons/ubuntu-logo.png"),
             CreateExactPathRegex("/info"),
@@ -118,7 +140,8 @@ namespace NuciAPI.Middleware.Security
             CreateExactPathRegex("/owa/auth/x.js"),
             CreateExactPathRegex("/package.json"),
             CreateExactPathRegex("/php_info"),
-            CreateExactPathRegex("/profiler/_phpinfo"),
+            CreateExactPathRegex("/profiler"),
+            CreateRawRegex("^/profiler/.*$"),
             CreateExactPathRegex("/r"),
             CreateExactPathRegex("/redirect-to"),
             CreateExactPathRegex("/redirect/"),
@@ -129,19 +152,24 @@ namespace NuciAPI.Middleware.Security
             CreateExactPathRegex("/security.txt"),
             CreateExactPathRegex("/serverless.yml"),
             CreateExactPathRegex("/sitemap.xml"),
+            CreateExactPathRegex("/sitemap_index.xml"),
             CreateExactPathRegex("/sse"),
             CreateExactPathRegex("/telescope/requests"),
             CreateExactPathRegex("/terraform.tfstate"),
-            CreateExactPathRegex("/terraform.tfvars"),
+            CreateRawRegex("terraform\\.tfvars"),
             CreateExactPathRegex("/trace.axd"),
             CreateExactPathRegex("/url"),
             CreateExactPathRegex("/v2/_catalog"),
             CreateExactPathRegex("/web.config"),
             CreateExactPathRegex("/wp-admin/"),
+            CreateExactPathRegex("/wp-json/gravitysmtp/v1/config"),
+            CreateExactPathRegex("/wp-json/gravitysmtp/v1/settings"),
             CreateExactPathRegex("/wp-json/gravitysmtp/v1/tests/mock-data"),
-            CreateRawRegex("/docker-compose\\.y[a]?ml"),
+            CreateExactPathRegex("/wp-json/wp/v2/settings"),
+            CreateRawRegex("/docker-compose.*\\.y[a]?ml"),
+            CreateRawRegex("/actuator/"),
             CreateRawRegex("^.*::\\$DATA$"),
-            CreateRawRegex("^.*/_[a-zA-Z0-9]+$"),
+            CreateRawRegex("/_"),
             CreateRawRegex("^.*/(backup|database|db)\\.(js|json|properties|sql|y[a]?ml|zip)$"),
             CreateRawRegex("^.*/(error)\\.log$"),
             CreateRawRegex("^.*/(secrets|settings)\\.(json|py|yml)$"),
@@ -158,15 +186,18 @@ namespace NuciAPI.Middleware.Security
             CreateRawRegex("^.*\\.php$"),
             CreateRawRegex("^.*\\.sql$"),
             CreateRawRegex("^.*\\debug.log$"),
-            CreateRawRegex("^.*backup\\.(gz|sql|tar\\.gz|zip)$"),
-            CreateRawRegex("^.*config\\.(go|ini|json|properties|py|rb|xml|y[a]?ml)$"),
+            CreateRawRegex("^.*backup\\.(gz|sql|sql\\.gz|tar\\.gz|zip)$"),
+            CreateRawRegex("^.*config\\.(go|ini|json|properties|py|rb|toml|xml|y[a]?ml)$"),
             CreateRawRegex("^.*phpinfo$"),
             CreateRawRegex("^.*prodtest$"),
             CreateRawRegex("^/_next/.*$"),
             CreateRawRegex("^/_profiler/.*$"),
-            CreateRawRegex("^/\\.(cursor|git|kilocode|kube|vscode)/?.*$"),
-            CreateRawRegex("^/\\*/.*"),
+            CreateRawRegex("^/\\.(cursor|git|kilocode|kube|roo|vscode|windsurf)/?.*$"),
+            CreateRawRegex("/\\.git"),
+            CreateRawRegex("/\\.\\."),
+            CreateRawRegex("/\\*"),
             CreateRawRegex("^/config/(local|production)\\.json$"),
+            CreateExactPathRegex("/config/master.key"),
             CreateRawRegex("^/console(?:/.*)?$"),
             CreateRawRegex("^/lander/.*$"),
             CreateRawRegex("^/logs/[a-z]+\\.log$"),
@@ -181,10 +212,11 @@ namespace NuciAPI.Middleware.Security
             CreateRawRegex("(?:^|&)page=gravitysmtp-settings(?:&|$)"),
             CreateRawRegex("(?:^|&)rest_route=/wp/v2/users/?(?:&|$)"),
             CreateRawRegex("(?:^|&)XDEBUG_SESSION_START=phpstorm(?:&|$)"),
+            CreateRawRegex("^app_vl=[^&]*$"),
         ];
 
-        private readonly IMemoryCache memoryCache = memoryCache ??
-            throw new ArgumentNullException(nameof(memoryCache));
+        private readonly IMemoryCache memoryCache;
+        private readonly Func<string, List<string>> hostnameResolver;
 
         public override async Task InvokeAsync(HttpContext context)
         {
@@ -283,15 +315,15 @@ namespace NuciAPI.Middleware.Security
             }
 
             string ipAddress = GetClientIpAddress(request.HttpContext);
-            List<string> hostnames = NetworkUtils.GetHostnames(ipAddress);
+            List<string> hostnames = hostnameResolver(ipAddress);
 
             if (!EnumerableExt.IsNullOrEmpty(hostnames))
             {
                 foreach (Regex forbiddenHostnamePattern in ForbiddenHostnames)
                 {
-                    foreach (string hosntame in hostnames)
+                    foreach (string hostname in hostnames)
                     {
-                        if (forbiddenHostnamePattern.IsMatch(path))
+                        if (forbiddenHostnamePattern.IsMatch(hostname))
                         {
                             return true;
                         }

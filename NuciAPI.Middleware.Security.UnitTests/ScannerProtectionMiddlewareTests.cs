@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,13 +18,18 @@ namespace NuciAPI.Middleware.Security.UnitTests
         [TestCase("/_profiler")]
         [TestCase("/_profiler/phpinfo")]
         [TestCase("/_rNd9xZ7kL3")]
+        [TestCase("/api/_internal")]
+        [TestCase("/v1/_status")]
         [TestCase("/.%65%6Ev")]
         [TestCase("/.%67%69%74/%63%6F%6E%66%69%67")]
+        [TestCase("/.amplifyrc")]
         [TestCase("/.aws/config")]
         [TestCase("/.aws/credentials")]
         [TestCase("/.boto")]
         [TestCase("/.composer/auth.json")]
         [TestCase("/.cursor/mcp.json")]
+        [TestCase("/.roo/mcp.json")]
+        [TestCase("/.windsurf/mcp.json")]
         [TestCase("/.docker/config.json")]
         [TestCase("/.env;.css")]
         [TestCase("/.env;.jpg")]
@@ -34,6 +40,7 @@ namespace NuciAPI.Middleware.Security.UnitTests
         [TestCase("/.env.dev")]
         [TestCase("/.env.development.local")]
         [TestCase("/.env.development")]
+        [TestCase("/.env.development.local")]
         [TestCase("/.env.dist")]
         [TestCase("/.env.docker")]
         [TestCase("/.env.dusk.local")]
@@ -62,6 +69,8 @@ namespace NuciAPI.Middleware.Security.UnitTests
         [TestCase("/.gitconfig")]
         [TestCase("/.github/workflows/main.yml")]
         [TestCase("/.gitlab-ci.yml")]
+        [TestCase("/api/.git/config")]
+        [TestCase("/repo/.git/HEAD")]
         [TestCase("/.htpasswd")]
         [TestCase("/.kilocode/mcp.json")]
         [TestCase("/.kube/config")]
@@ -74,24 +83,45 @@ namespace NuciAPI.Middleware.Security.UnitTests
         [TestCase("/.vscode/mcp.json")]
         [TestCase("/.vscode/settings.json")]
         [TestCase("/*/%5Bslug%5D")]
+        [TestCase("/api/*")]
+        [TestCase("/api/*/users")]
+        [TestCase("/api/../admin")]
+        [TestCase("/api/v1/../../etc/passwd")]
         [TestCase("/%77%70%2D%63%6F%6E%66%69%67.%70%68%70.%62%61%6B")]
+        [TestCase("/actuator/auditevents")]
         [TestCase("/actuator/beans")]
         [TestCase("/actuator/configprops")]
         [TestCase("/actuator/env")]
         [TestCase("/actuator/heapdump")]
+        [TestCase("/actuator/httptrace")]
+        [TestCase("/actuator/sessions")]
+        [TestCase("/actuator/threaddump")]
+        [TestCase("/app/actuator/configprops")]
+        [TestCase("/app/actuator/heapdump")]
+        [TestCase("/backend/actuator/heapdump")]
+        [TestCase("/v2/actuator/configprops")]
         [TestCase("/admin/.env")]
         [TestCase("/admin/config.php")]
         [TestCase("/admin/phpinfo.php")]
         [TestCase("/administrator/.env")]
         [TestCase("/api-keys.txt")]
         [TestCase("/api/.env")]
+        [TestCase("/api/actuator/configprops")]
+        [TestCase("/api/actuator/env")]
+        [TestCase("/backup.sql.gz")]
+        [TestCase("/.kube/config")]
+        [TestCase("/api/configprops")]
+        [TestCase("/api/env")]
+        [TestCase("/api/heapdump")]
         [TestCase("/api/v1/.env")]
         [TestCase("/api/v2/.env")]
         [TestCase("/apis/.env")]
         [TestCase("/app_dev.php/_profiler/phpinfo")]
         [TestCase("/app/.env")]
+        [TestCase("/app/config/parameters.yml")]
         [TestCase("/app/etc/env.php")]
         [TestCase("/app/etc/local.xml")]
+        [TestCase("/app/heapdump")]
         [TestCase("/application-prod.yml")]
         [TestCase("/application-production.yml")]
         [TestCase("/application.properties")]
@@ -143,7 +173,10 @@ namespace NuciAPI.Middleware.Security.UnitTests
         [TestCase("/configuration.php.old")]
         [TestCase("/configuration.php")]
         [TestCase("/configuration.php~")]
+        [TestCase("/config")]
+        [TestCase("/config/master.key")]
         [TestCase("/connectionstrings.config")]
+        [TestCase("/configprops")]
         [TestCase("/core/.env")]
         [TestCase("/core/app/.env")]
         [TestCase("/core/Database/.env")]
@@ -159,12 +192,15 @@ namespace NuciAPI.Middleware.Security.UnitTests
         [TestCase("/database.yml")]
         [TestCase("/database/.env")]
         [TestCase("/db.sql")]
+        [TestCase("/dcimgr")]
         [TestCase("/debug.php")]
         [TestCase("/debug/default/view")]
         [TestCase("/deploy/.env")]
         [TestCase("/dev/.env")]
         [TestCase("/dev/phpinfo.php")]
         [TestCase("/dist/.env")]
+        [TestCase("/dnsmgr")]
+        [TestCase("/docker-compose.prod.yml")]
         [TestCase("/docker-compose.yaml")]
         [TestCase("/docker-compose.yml")]
         [TestCase("/drupal/.env")]
@@ -173,6 +209,8 @@ namespace NuciAPI.Middleware.Security.UnitTests
         [TestCase("/email/.env")]
         [TestCase("/en/.env")]
         [TestCase("/env")]
+        [TestCase("/env.backup")]
+        [TestCase("/env.txt")]
         [TestCase("/erp/.env")]
         [TestCase("/error_log")]
         [TestCase("/error.log")]
@@ -180,7 +218,9 @@ namespace NuciAPI.Middleware.Security.UnitTests
         [TestCase("/express/.env")]
         [TestCase("/frontend/.env")]
         [TestCase("/gateway/.env")]
+        [TestCase("/global/common/404.html")]
         [TestCase("/graphql/.env")]
+        [TestCase("/heapdump")]
         [TestCase("/hosting/phpinfo.php")]
         [TestCase("/htdocs/.env")]
         [TestCase("/html/.env")]
@@ -236,6 +276,7 @@ namespace NuciAPI.Middleware.Security.UnitTests
         [TestCase("/prestashop/.env")]
         [TestCase("/private/.env")]
         [TestCase("/probe.php")]
+        [TestCase("/profiler")]
         [TestCase("/prod/.env")]
         [TestCase("/project/.env")]
         [TestCase("/psnlink/.env")]
@@ -267,6 +308,7 @@ namespace NuciAPI.Middleware.Security.UnitTests
         [TestCase("/shopify/.env")]
         [TestCase("/site/.env")]
         [TestCase("/sitemap.xml")]
+        [TestCase("/sitemap_index.xml")]
         [TestCase("/sitemaps/.env")]
         [TestCase("/sites/default/settings.php.bak")]
         [TestCase("/sites/default/settings.php")]
@@ -285,6 +327,7 @@ namespace NuciAPI.Middleware.Security.UnitTests
         [TestCase("/temp/.env")]
         [TestCase("/terraform.tfstate")]
         [TestCase("/terraform.tfvars")]
+        [TestCase("/deploy/terraform.tfvars")]
         [TestCase("/test.php")]
         [TestCase("/test/phpinfo.php")]
         [TestCase("/tmp/.env")]
@@ -314,7 +357,10 @@ namespace NuciAPI.Middleware.Security.UnitTests
         [TestCase("/wp-config.php~")]
         [TestCase("/wp-content/debug.log")]
         [TestCase("/wp-json/")]
+        [TestCase("/wp-json/gravitysmtp/v1/config")]
+        [TestCase("/wp-json/gravitysmtp/v1/settings")]
         [TestCase("/wp-json/gravitysmtp/v1/tests/mock-data")]
+        [TestCase("/wp-json/wp/v2/settings")]
         [TestCase("/wp-login.php")]
         [TestCase("/wp/.env")]
         [TestCase("/www/.env")]
@@ -395,14 +441,63 @@ namespace NuciAPI.Middleware.Security.UnitTests
         }
 
         [Test]
-        public async Task Given_ForbiddenQueryPattern_When_InvokeAsync_Then_BlocksRequest()
+        [TestCase("?XDEBUG_SESSION_START=phpstorm")]
+        [TestCase("?app_vl=1.2.3")]
+        [TestCase("?app_vl=")]
+        [TestCase("?app_vl=anything")]
+        public async Task Given_ForbiddenQueryPattern_When_InvokeAsync_Then_BlocksRequest(string queryString)
         {
             using MemoryCache memoryCache = new(new MemoryCacheOptions());
             ScannerProtectionMiddleware middleware = new(_ => Task.CompletedTask, memoryCache);
             DefaultHttpContext context = CreateContext(
                 "198.51.100.15",
                 "/search",
-                queryString: new QueryString("?XDEBUG_SESSION_START=phpstorm"));
+                queryString: new QueryString(queryString));
+
+            await middleware.InvokeAsync(context);
+
+            Assert.That(context.Response.StatusCode, Is.EqualTo(StatusCodes.Status403Forbidden));
+        }
+
+        [Test]
+        [TestCase("?app_vl=1.2.3&other=x")]
+        [TestCase("?other=x&app_vl=1.2.3")]
+        public async Task Given_AppVlWithOtherParams_When_InvokeAsync_Then_AllowsRequest(string queryString)
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            bool wasInvoked = false;
+            ScannerProtectionMiddleware middleware = new(_ =>
+            {
+                wasInvoked = true;
+                return Task.CompletedTask;
+            }, memoryCache);
+            DefaultHttpContext context = CreateContext(
+                "198.51.100.16",
+                "/search",
+                queryString: new QueryString(queryString));
+
+            await middleware.InvokeAsync(context);
+
+            Assert.That(wasInvoked, Is.True);
+        }
+
+        [Test]
+        [TestCase("formerlying.com")]
+        [TestCase("tor-exit-read-me.dfri.se")]
+        [TestCase("tor-exit.dfri.se")]
+        [TestCase("any.subdomain.dfri.se")]
+        [TestCase("tor-exit-node.example.com")]
+        [TestCase("sometor.exit.host.net")]
+        [TestCase("1.exit.tor.network.org")]
+        public async Task Given_TorExitNodeHostname_When_InvokeAsync_Then_BlocksRequest(string hostname)
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            ScannerProtectionMiddleware middleware = new(
+                _ => Task.CompletedTask,
+                memoryCache,
+                _ => [hostname]);
+
+            DefaultHttpContext context = CreateContext("198.51.100.20", "/health");
 
             await middleware.InvokeAsync(context);
 
