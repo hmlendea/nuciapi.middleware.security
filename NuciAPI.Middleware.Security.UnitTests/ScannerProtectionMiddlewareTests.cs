@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -403,6 +404,28 @@ namespace NuciAPI.Middleware.Security.UnitTests
                 "198.51.100.15",
                 "/search",
                 queryString: new QueryString("?XDEBUG_SESSION_START=phpstorm"));
+
+            await middleware.InvokeAsync(context);
+
+            Assert.That(context.Response.StatusCode, Is.EqualTo(StatusCodes.Status403Forbidden));
+        }
+
+        [Test]
+        [TestCase("tor-exit-read-me.dfri.se")]
+        [TestCase("tor-exit.dfri.se")]
+        [TestCase("any.subdomain.dfri.se")]
+        [TestCase("tor-exit-node.example.com")]
+        [TestCase("sometor.exit.host.net")]
+        [TestCase("1.exit.tor.network.org")]
+        public async Task Given_TorExitNodeHostname_When_InvokeAsync_Then_BlocksRequest(string hostname)
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            ScannerProtectionMiddleware middleware = new(
+                _ => Task.CompletedTask,
+                memoryCache,
+                _ => [hostname]);
+
+            DefaultHttpContext context = CreateContext("198.51.100.20", "/health");
 
             await middleware.InvokeAsync(context);
 

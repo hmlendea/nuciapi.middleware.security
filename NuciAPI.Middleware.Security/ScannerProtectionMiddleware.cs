@@ -12,11 +12,20 @@ using NuciWeb.HTTP;
 
 namespace NuciAPI.Middleware.Security
 {
-    internal sealed class ScannerProtectionMiddleware(
-        RequestDelegate next,
-        IMemoryCache memoryCache)
-        : NuciApiMiddleware(next)
+    internal sealed class ScannerProtectionMiddleware : NuciApiMiddleware
     {
+        internal ScannerProtectionMiddleware(
+            RequestDelegate next,
+            IMemoryCache memoryCache,
+            Func<string, List<string>> hostnameResolver)
+            : base(next)
+        {
+            this.memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
+            this.hostnameResolver = hostnameResolver ?? throw new ArgumentNullException(nameof(hostnameResolver));
+        }
+
+        public ScannerProtectionMiddleware(RequestDelegate next, IMemoryCache memoryCache)
+            : this(next, memoryCache, NetworkUtils.GetHostnames) { }
         private static readonly TimeSpan BanDuration = TimeSpan.FromHours(10);
 
         private static readonly string[] SafeVerbs = ["POST", "GET", "PUT", "DELETE", "PATCH"];
@@ -42,6 +51,9 @@ namespace NuciAPI.Middleware.Security
         private static readonly Regex[] ForbiddenHostnames =
         [
             CreateExactPathRegex("mail.uber-uk.online"),
+            CreateRawRegex(@"^.*\.dfri\.se$"),
+            CreateRawRegex(@".*tor[-.]exit.*"),
+            CreateRawRegex(@".*exit[-.]tor.*"),
         ];
 
         private static readonly Regex[] ForbiddenResourcePatterns =
@@ -183,8 +195,8 @@ namespace NuciAPI.Middleware.Security
             CreateRawRegex("(?:^|&)XDEBUG_SESSION_START=phpstorm(?:&|$)"),
         ];
 
-        private readonly IMemoryCache memoryCache = memoryCache ??
-            throw new ArgumentNullException(nameof(memoryCache));
+        private readonly IMemoryCache memoryCache;
+        private readonly Func<string, List<string>> hostnameResolver;
 
         public override async Task InvokeAsync(HttpContext context)
         {
@@ -283,15 +295,15 @@ namespace NuciAPI.Middleware.Security
             }
 
             string ipAddress = GetClientIpAddress(request.HttpContext);
-            List<string> hostnames = NetworkUtils.GetHostnames(ipAddress);
+            List<string> hostnames = hostnameResolver(ipAddress);
 
             if (!EnumerableExt.IsNullOrEmpty(hostnames))
             {
                 foreach (Regex forbiddenHostnamePattern in ForbiddenHostnames)
                 {
-                    foreach (string hosntame in hostnames)
+                    foreach (string hostname in hostnames)
                     {
-                        if (forbiddenHostnamePattern.IsMatch(path))
+                        if (forbiddenHostnamePattern.IsMatch(hostname))
                         {
                             return true;
                         }
