@@ -50,6 +50,7 @@ namespace NuciAPI.Middleware.Security
 
         private static readonly Regex[] ForbiddenHostnames =
         [
+            CreateExactPathRegex("formerlying.com"),
             CreateExactPathRegex("mail.uber-uk.online"),
             CreateRawRegex(@"^.*\.dfri\.se$"),
             CreateRawRegex(@".*tor[-.]exit.*"),

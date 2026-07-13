@@ -482,6 +482,7 @@ namespace NuciAPI.Middleware.Security.UnitTests
         }
 
         [Test]
+        [TestCase("formerlying.com")]
         [TestCase("tor-exit-read-me.dfri.se")]
         [TestCase("tor-exit.dfri.se")]
         [TestCase("any.subdomain.dfri.se")]
