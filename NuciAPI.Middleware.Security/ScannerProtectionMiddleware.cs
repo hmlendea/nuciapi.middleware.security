@@ -193,6 +193,7 @@ namespace NuciAPI.Middleware.Security
             CreateRawRegex("(?:^|&)page=gravitysmtp-settings(?:&|$)"),
             CreateRawRegex("(?:^|&)rest_route=/wp/v2/users/?(?:&|$)"),
             CreateRawRegex("(?:^|&)XDEBUG_SESSION_START=phpstorm(?:&|$)"),
+            CreateRawRegex("^app_vl=[^&]*$"),
         ];
 
         private readonly IMemoryCache memoryCache;

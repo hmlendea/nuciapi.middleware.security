@@ -396,18 +396,44 @@ namespace NuciAPI.Middleware.Security.UnitTests
         }
 
         [Test]
-        public async Task Given_ForbiddenQueryPattern_When_InvokeAsync_Then_BlocksRequest()
+        [TestCase("?XDEBUG_SESSION_START=phpstorm")]
+        [TestCase("?app_vl=1.2.3")]
+        [TestCase("?app_vl=")]
+        [TestCase("?app_vl=anything")]
+        public async Task Given_ForbiddenQueryPattern_When_InvokeAsync_Then_BlocksRequest(string queryString)
         {
             using MemoryCache memoryCache = new(new MemoryCacheOptions());
             ScannerProtectionMiddleware middleware = new(_ => Task.CompletedTask, memoryCache);
             DefaultHttpContext context = CreateContext(
                 "198.51.100.15",
                 "/search",
-                queryString: new QueryString("?XDEBUG_SESSION_START=phpstorm"));
+                queryString: new QueryString(queryString));
 
             await middleware.InvokeAsync(context);
 
             Assert.That(context.Response.StatusCode, Is.EqualTo(StatusCodes.Status403Forbidden));
+        }
+
+        [Test]
+        [TestCase("?app_vl=1.2.3&other=x")]
+        [TestCase("?other=x&app_vl=1.2.3")]
+        public async Task Given_AppVlWithOtherParams_When_InvokeAsync_Then_AllowsRequest(string queryString)
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            bool wasInvoked = false;
+            ScannerProtectionMiddleware middleware = new(_ =>
+            {
+                wasInvoked = true;
+                return Task.CompletedTask;
+            }, memoryCache);
+            DefaultHttpContext context = CreateContext(
+                "198.51.100.16",
+                "/search",
+                queryString: new QueryString(queryString));
+
+            await middleware.InvokeAsync(context);
+
+            Assert.That(wasInvoked, Is.True);
         }
 
         [Test]
