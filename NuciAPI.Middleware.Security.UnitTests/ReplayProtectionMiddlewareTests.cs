@@ -141,6 +141,82 @@ namespace NuciAPI.Middleware.UnitTests.Security
                 Throws.ArgumentNullException);
         }
 
+        [Test]
+        public void Given_NullNextDelegate_When_ConstructingMiddleware_Then_ThrowsArgumentNullException()
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+
+            Assert.That(
+                () => new ReplayProtectionMiddleware(null!, memoryCache),
+                Throws.ArgumentNullException);
+        }
+
+        [Test]
+        public async Task Given_SameRequestIdButDifferentPaths_When_InvokeAsync_Then_AllowsBothRequests()
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            int invocationCount = 0;
+            ReplayProtectionMiddleware middleware = new(_ =>
+            {
+                invocationCount += 1;
+                return Task.CompletedTask;
+            }, memoryCache);
+
+            string requestId = Guid.NewGuid().ToString().ToUpperInvariant();
+            DefaultHttpContext firstContext = CreateValidContext(requestId: requestId);
+            firstContext.Request.Path = "/resource-alpha";
+            DefaultHttpContext secondContext = CreateValidContext(requestId: requestId);
+            secondContext.Request.Path = "/resource-beta";
+
+            await middleware.InvokeAsync(firstContext);
+            await middleware.InvokeAsync(secondContext);
+
+            Assert.That(invocationCount, Is.EqualTo(2));
+        }
+
+        [Test]
+        public async Task Given_SameRequestIdButDifferentClientIds_When_InvokeAsync_Then_AllowsBothRequests()
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            int invocationCount = 0;
+            ReplayProtectionMiddleware middleware = new(_ =>
+            {
+                invocationCount += 1;
+                return Task.CompletedTask;
+            }, memoryCache);
+
+            string requestId = Guid.NewGuid().ToString().ToUpperInvariant();
+            DefaultHttpContext firstContext = CreateValidContext(requestId: requestId);
+            firstContext.Request.Headers[NuciApiHeaderNames.ClientId] = "IlarionPintilie";
+            DefaultHttpContext secondContext = CreateValidContext(requestId: requestId);
+            secondContext.Request.Headers[NuciApiHeaderNames.ClientId] = "solaire_of_astora";
+
+            await middleware.InvokeAsync(firstContext);
+            await middleware.InvokeAsync(secondContext);
+
+            Assert.That(invocationCount, Is.EqualTo(2));
+        }
+
+        [Test]
+        public async Task Given_DifferentRequestIdsOnSamePath_When_InvokeAsync_Then_AllowsBothRequests()
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            int invocationCount = 0;
+            ReplayProtectionMiddleware middleware = new(_ =>
+            {
+                invocationCount += 1;
+                return Task.CompletedTask;
+            }, memoryCache);
+
+            DefaultHttpContext firstContext = CreateValidContext();
+            DefaultHttpContext secondContext = CreateValidContext();
+
+            await middleware.InvokeAsync(firstContext);
+            await middleware.InvokeAsync(secondContext);
+
+            Assert.That(invocationCount, Is.EqualTo(2));
+        }
+
         private static DefaultHttpContext CreateValidContext(
             string? requestId = null,
             DateTimeOffset? timestamp = null,

@@ -510,6 +510,200 @@ namespace NuciAPI.Middleware.Security.UnitTests
                 () => new ScannerProtectionMiddleware(_ => Task.CompletedTask, null!),
                 Throws.ArgumentNullException);
 
+        [Test]
+        public void Given_NullNextDelegate_When_ConstructingMiddleware_Then_ThrowsArgumentNullException()
+            => Assert.That(
+                () => new ScannerProtectionMiddleware(null!, new MemoryCache(new MemoryCacheOptions())),
+                Throws.ArgumentNullException);
+
+        [Test]
+        public void Given_NullHostnameResolver_When_ConstructingMiddleware_Then_ThrowsArgumentNullException()
+            => Assert.That(
+                () => new ScannerProtectionMiddleware(_ => Task.CompletedTask, new MemoryCache(new MemoryCacheOptions()), null!),
+                Throws.ArgumentNullException);
+
+        [Test]
+        public async Task Given_SafePath_When_InvokeAsync_Then_InvokesNextDelegate()
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            bool wasInvoked = false;
+            ScannerProtectionMiddleware middleware = new(_ =>
+            {
+                wasInvoked = true;
+                return Task.CompletedTask;
+            }, memoryCache);
+
+            DefaultHttpContext context = CreateContext("198.51.100.21", "/api/health");
+
+            await middleware.InvokeAsync(context);
+
+            Assert.That(wasInvoked, Is.True);
+        }
+
+        [Test]
+        [TestCase("Mozilla/5.0 Chrome/143.0.0.0 Safari/537.36")]
+        [TestCase("InternetMeasurement/1.0")]
+        [TestCase("OAI-SearchBot/1.0")]
+        [TestCase("SecurityScanner/2.0")]
+        public async Task Given_ForbiddenUserAgent_When_InvokeAsync_Then_BlocksRequest(string userAgent)
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            ScannerProtectionMiddleware middleware = new(_ => Task.CompletedTask, memoryCache);
+            DefaultHttpContext context = CreateContext("198.51.100.22", "/api/health");
+            context.Request.Headers["User-Agent"] = userAgent;
+
+            await middleware.InvokeAsync(context);
+
+            Assert.That(context.Response.StatusCode, Is.EqualTo(StatusCodes.Status403Forbidden));
+        }
+
+        [Test]
+        public async Task Given_SafeUserAgent_When_InvokeAsync_Then_InvokesNextDelegate()
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            bool wasInvoked = false;
+            ScannerProtectionMiddleware middleware = new(_ =>
+            {
+                wasInvoked = true;
+                return Task.CompletedTask;
+            }, memoryCache);
+
+            DefaultHttpContext context = CreateContext("198.51.100.23", "/api/health");
+            context.Request.Headers["User-Agent"] = "MyApp/1.0 (Linux; compatible)";
+
+            await middleware.InvokeAsync(context);
+
+            Assert.That(wasInvoked, Is.True);
+        }
+
+        [Test]
+        public async Task Given_ForbiddenClientHintsHeader_When_InvokeAsync_Then_BlocksRequest()
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            ScannerProtectionMiddleware middleware = new(_ => Task.CompletedTask, memoryCache);
+            DefaultHttpContext context = CreateContext("198.51.100.24", "/api/health");
+            context.Request.Headers["sec-ch-ua"] = "\".Not/A)Brand\";v=\"99\"";
+
+            await middleware.InvokeAsync(context);
+
+            Assert.That(context.Response.StatusCode, Is.EqualTo(StatusCodes.Status403Forbidden));
+        }
+
+        [Test]
+        public async Task Given_ForbiddenFromHeaderInUpperCase_When_InvokeAsync_Then_BlocksRequest()
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            ScannerProtectionMiddleware middleware = new(_ => Task.CompletedTask, memoryCache);
+            DefaultHttpContext context = CreateContext("198.51.100.25", "/api/health");
+            context.Request.Headers["From"] = "OAI-SEARCHBOT(AT)OPENAI.COM";
+
+            await middleware.InvokeAsync(context);
+
+            Assert.That(context.Response.StatusCode, Is.EqualTo(StatusCodes.Status403Forbidden));
+        }
+
+        [Test]
+        public async Task Given_SafeFromHeader_When_InvokeAsync_Then_InvokesNextDelegate()
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            bool wasInvoked = false;
+            ScannerProtectionMiddleware middleware = new(_ =>
+            {
+                wasInvoked = true;
+                return Task.CompletedTask;
+            }, memoryCache);
+
+            DefaultHttpContext context = CreateContext("198.51.100.26", "/api/health");
+            context.Request.Headers["From"] = "ilarion.pintilie@nucilandia.ro";
+
+            await middleware.InvokeAsync(context);
+
+            Assert.That(wasInvoked, Is.True);
+        }
+
+        [Test]
+        public async Task Given_PreviouslyBannedIpAddress_When_InvokeAsync_Then_Returns403WithoutInvokingNext()
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            bool wasInvoked = false;
+            ScannerProtectionMiddleware middleware = new(_ =>
+            {
+                wasInvoked = true;
+                return Task.CompletedTask;
+            }, memoryCache);
+
+            DefaultHttpContext bannedContext = CreateContext("198.51.100.27", "/wp-config.php");
+            await middleware.InvokeAsync(bannedContext);
+
+            DefaultHttpContext subsequentContext = CreateContext("198.51.100.27", "/api/health");
+            await middleware.InvokeAsync(subsequentContext);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(wasInvoked, Is.False);
+                Assert.That(subsequentContext.Response.StatusCode, Is.EqualTo(StatusCodes.Status403Forbidden));
+            });
+        }
+
+        [Test]
+        public async Task Given_RootGetRequestWithQueryString_When_InvokeAsync_Then_InvokesNextDelegate()
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            bool wasInvoked = false;
+            ScannerProtectionMiddleware middleware = new(_ =>
+            {
+                wasInvoked = true;
+                return Task.CompletedTask;
+            }, memoryCache);
+
+            DefaultHttpContext context = CreateContext(
+                "198.51.100.28",
+                "/",
+                method: HttpMethods.Get,
+                queryString: new QueryString("?search=something"));
+
+            await middleware.InvokeAsync(context);
+
+            Assert.That(wasInvoked, Is.True);
+        }
+
+        [Test]
+        public async Task Given_EmptyHostnameList_When_InvokeAsync_Then_InvokesNextDelegate()
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            bool wasInvoked = false;
+            ScannerProtectionMiddleware middleware = new(
+                _ =>
+                {
+                    wasInvoked = true;
+                    return Task.CompletedTask;
+                },
+                memoryCache,
+                _ => []);
+
+            DefaultHttpContext context = CreateContext("198.51.100.29", "/api/health");
+
+            await middleware.InvokeAsync(context);
+
+            Assert.That(wasInvoked, Is.True);
+        }
+
+        [Test]
+        public async Task Given_ForbiddenExactHostname_When_InvokeAsync_Then_BlocksRequest()
+        {
+            using MemoryCache memoryCache = new(new MemoryCacheOptions());
+            ScannerProtectionMiddleware middleware = new(
+                _ => Task.CompletedTask,
+                memoryCache,
+                _ => ["mail.uber-uk.online"]);
+
+            DefaultHttpContext context = CreateContext("198.51.100.30", "/api/health");
+
+            await middleware.InvokeAsync(context);
+
+            Assert.That(context.Response.StatusCode, Is.EqualTo(StatusCodes.Status403Forbidden));
+        }
+
         private static DefaultHttpContext CreateContext(
             string ipAddress,
             string path,
