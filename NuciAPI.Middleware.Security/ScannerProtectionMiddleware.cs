@@ -68,21 +68,26 @@ namespace NuciAPI.Middleware.Security
             CreateExactPathRegex("/.composer/auth.json"),
             CreateExactPathRegex("/.DS_Store"),
             CreateExactPathRegex("/.htpasswd"),
+            CreateExactPathRegex("/.mcp.json"),
             CreateExactPathRegex("/.netrc"),
             CreateExactPathRegex("/.npmrc"),
             CreateExactPathRegex("/.pgpass"),
             CreateExactPathRegex("/.pypirc"),
             CreateExactPathRegex("/.streamlit/secrets.toml"),
+            CreateExactPathRegex("/.svn/wc.db"),
             CreateExactPathRegex("/.travis.yml"),
             CreateExactPathRegex("/.vercel/.env.production.local"),
             CreateExactPathRegex("/.well-known/security.txt"),
+            CreateExactPathRegex("/@fs/proc/1/environ"),
             CreateExactPathRegex("/@vite/env"),
+            CreateExactPathRegex("/administrator/components/com_jce/index.html"),
             CreateExactPathRegex("/api-keys.txt"),
             CreateExactPathRegex("/api/configprops"),
             CreateExactPathRegex("/api/env"),
             CreateExactPathRegex("/api/gql"),
             CreateExactPathRegex("/api/graphql"),
             CreateExactPathRegex("/api/heapdump"),
+            CreateExactPathRegex("/api/session/properties"),
             CreateExactPathRegex("/app.config"),
             CreateExactPathRegex("/app.toml"),
             CreateExactPathRegex("/app/"),
@@ -151,9 +156,11 @@ namespace NuciAPI.Middleware.Security
             CreateExactPathRegex("/SDK/webLanguage"),
             CreateExactPathRegex("/security.txt"),
             CreateExactPathRegex("/serverless.yml"),
+            CreateExactPathRegex("/sitemap-index.xml"),
             CreateExactPathRegex("/sitemap.xml"),
             CreateExactPathRegex("/sitemap_index.xml"),
             CreateExactPathRegex("/sse"),
+            CreateExactPathRegex("/static../etc/passwd"),
             CreateExactPathRegex("/telescope/requests"),
             CreateExactPathRegex("/terraform.tfstate"),
             CreateRawRegex("terraform\\.tfvars"),
@@ -190,6 +197,7 @@ namespace NuciAPI.Middleware.Security
             CreateRawRegex("^.*config\\.(go|ini|json|properties|py|rb|toml|xml|y[a]?ml)$"),
             CreateRawRegex("^.*phpinfo$"),
             CreateRawRegex("^.*prodtest$"),
+            CreateRawRegex("^/__aws_leak_probe_.*$"),
             CreateRawRegex("^/_next/.*$"),
             CreateRawRegex("^/_profiler/.*$"),
             CreateRawRegex("^/\\.(cursor|git|kilocode|kube|roo|vscode|windsurf)/?.*$"),
@@ -209,7 +217,10 @@ namespace NuciAPI.Middleware.Security
 
         private static readonly Regex[] ForbiddenQueryPatterns =
         [
+            CreateRawRegex("(?:^|&)file=(?:\\.\\./)+etc/passwd(?:&|$)"),
             CreateRawRegex("(?:^|&)page=gravitysmtp-settings(?:&|$)"),
+            CreateRawRegex("(?:^|&)raw\\?\\?(?:&|$)"),
+            CreateRawRegex("(?:^|&)rest_route=/batch/v1/?(?:&|$)"),
             CreateRawRegex("(?:^|&)rest_route=/wp/v2/users/?(?:&|$)"),
             CreateRawRegex("(?:^|&)XDEBUG_SESSION_START=phpstorm(?:&|$)"),
             CreateRawRegex("^app_vl=[^&]*$"),
@@ -269,7 +280,9 @@ namespace NuciAPI.Middleware.Security
                 }
             }
 
-            string queryString = request.QueryString.ToString().TrimStart('?');
+            string queryString = UrlDecode(request.QueryString.ToString())
+                .Normalize(NormalizationForm.FormKC)
+                .TrimStart('?');
 
             if (!string.IsNullOrWhiteSpace(queryString))
             {
