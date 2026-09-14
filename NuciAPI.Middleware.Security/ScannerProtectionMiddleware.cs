@@ -151,6 +151,7 @@ namespace NuciAPI.Middleware.Security
             CreateExactPathRegex("/SDK/webLanguage"),
             CreateExactPathRegex("/security.txt"),
             CreateExactPathRegex("/serverless.yml"),
+            CreateExactPathRegex("/sitemap-index.xml"),
             CreateExactPathRegex("/sitemap.xml"),
             CreateExactPathRegex("/sitemap_index.xml"),
             CreateExactPathRegex("/sse"),
@@ -209,7 +210,10 @@ namespace NuciAPI.Middleware.Security
 
         private static readonly Regex[] ForbiddenQueryPatterns =
         [
+            CreateRawRegex("(?:^|&)file=(?:\\.\\./)+etc/passwd(?:&|$)"),
             CreateRawRegex("(?:^|&)page=gravitysmtp-settings(?:&|$)"),
+            CreateRawRegex("(?:^|&)raw\\?\\?(?:&|$)"),
+            CreateRawRegex("(?:^|&)rest_route=/batch/v1/?(?:&|$)"),
             CreateRawRegex("(?:^|&)rest_route=/wp/v2/users/?(?:&|$)"),
             CreateRawRegex("(?:^|&)XDEBUG_SESSION_START=phpstorm(?:&|$)"),
             CreateRawRegex("^app_vl=[^&]*$"),
@@ -269,7 +273,9 @@ namespace NuciAPI.Middleware.Security
                 }
             }
 
-            string queryString = request.QueryString.ToString().TrimStart('?');
+            string queryString = UrlDecode(request.QueryString.ToString())
+                .Normalize(NormalizationForm.FormKC)
+                .TrimStart('?');
 
             if (!string.IsNullOrWhiteSpace(queryString))
             {

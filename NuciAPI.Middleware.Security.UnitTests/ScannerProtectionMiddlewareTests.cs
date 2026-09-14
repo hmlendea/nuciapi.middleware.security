@@ -307,6 +307,7 @@ namespace NuciAPI.Middleware.Security.UnitTests
         [TestCase("/shop/.env")]
         [TestCase("/shopify/.env")]
         [TestCase("/site/.env")]
+        [TestCase("/sitemap-index.xml")]
         [TestCase("/sitemap.xml")]
         [TestCase("/sitemap_index.xml")]
         [TestCase("/sitemaps/.env")]
@@ -445,6 +446,13 @@ namespace NuciAPI.Middleware.Security.UnitTests
         [TestCase("?app_vl=1.2.3")]
         [TestCase("?app_vl=")]
         [TestCase("?app_vl=anything")]
+        [TestCase("?file=../../../../etc/passwd")]
+        [TestCase("?file%EF%BC%9D../../../../etc/passwd")]
+        [TestCase("?file\uFF1D../../../../etc/passwd")]
+        [TestCase("?raw??")]
+        [TestCase("?rest_route=/batch/v1")]
+        [TestCase("?rest_route%EF%BC%9D/batch/v1")]
+        [TestCase("?rest_route\uFF1D/batch/v1")]
         public async Task Given_ForbiddenQueryPattern_When_InvokeAsync_Then_BlocksRequest(string queryString)
         {
             using MemoryCache memoryCache = new(new MemoryCacheOptions());
