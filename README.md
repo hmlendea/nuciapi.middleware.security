@@ -177,6 +177,10 @@ dotnet test
 dotnet pack -c Release
 ```
 
+## Architecture
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for the current middleware boundaries, request flows, cache state, compatibility contracts, and verification scope.
+
 ## Contributing
 
 Contributions are welcome.
