@@ -174,14 +174,17 @@ The [.NET workflow](./.github/workflows/dotnet.yml) restores dependencies, compi
 
 ### Release
 
-The [GitHub Release workflow](./.github/workflows/github-release.yml) is initiated when a GitHub release is published.
+The [GitHub Release workflow](./.github/workflows/github-release.yml) and [NuGet Release workflow](./.github/workflows/nuget-release.yml) are initiated when a GitHub release is published.
 
-To publish an asset:
+To publish a release:
 1. Create a GitHub release with a tag in the form `v<version>`.
 2. Publish the release.
-3. Confirm that the workflow uploads `NuciAPI.Middleware.Security.<version>.nupkg` and appends its SHA256 checksum to the release notes.
+3. Confirm that the GitHub Release workflow uploads `NuciAPI.Middleware.Security.<version>.nupkg` and appends its SHA256 checksum to the release notes.
+4. Confirm that the NuGet Release workflow publishes the same package version to NuGet.org.
 
-The workflow derives the package version from the tag and compiles in `Release` configuration. It does not sign the package or publish it to NuGet.org.
+Both workflows derive the package version from the tag and compile in `Release` configuration. The NuGet Release workflow uses [NuGet Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing) with GitHub Actions OIDC, the repository's `NUGET_USER` secret, and a short-lived NuGet.org API key. Neither workflow signs the package.
+
+Before publishing, configure a NuGet.org Trusted Publishing policy for owner `hmlendea`, repository `nuciapi.middleware.security`, and workflow file `nuget-release.yml`. Add the NuGet profile name, not an email address, as the `NUGET_USER` repository secret.
 
 ### Dependencies
 
@@ -210,7 +213,7 @@ The solution separates the distributable middleware library from its NUnit test 
 
 | Directory | Purpose |
 |-----------|---------|
-| [`.github/workflows`](./.github/workflows) | Contains continuous integration and GitHub Release automation. |
+| [`.github/workflows`](./.github/workflows) | Contains continuous integration, GitHub Release, and NuGet.org publication automation. |
 
 ## 🏗️ Architecture
 
