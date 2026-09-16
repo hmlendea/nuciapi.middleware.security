@@ -1,4 +1,4 @@
-name: NuGet Release
+name: NuGet.org Release
 
 on:
   release:
