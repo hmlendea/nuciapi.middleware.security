@@ -30,6 +30,7 @@ Security middleware for ASP.NET Core APIs that validates request headers, reject
 - [Project Structure](#project-structure)
   - [Projects and Packages](#projects-and-packages)
   - [Directories](#directories)
+- [Architecture](#architecture)
 - [Data Formats and Protocols](#data-formats-and-protocols)
 - [Contributing](#contributing)
 - [Related Projects](#related-projects)
@@ -210,6 +211,10 @@ The solution separates the distributable middleware library from its NUnit test 
 | Directory | Purpose |
 |-----------|---------|
 | [`.github/workflows`](./.github/workflows) | Contains continuous integration and GitHub Release automation. |
+
+## 🏗️ Architecture
+
+For more information, see [architecture documentation](./ARCHITECTURE.md).
 
 ## 🧾 Data Formats and Protocols
 
