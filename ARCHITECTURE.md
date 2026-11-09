@@ -399,5 +399,5 @@ The current public registration calls `AddMemoryCache`; a distributed implementa
 ## 📚 Related Documentation
 
 - [README.md](README.md) describes installation, consumer usage, request-header requirements, recommended middleware order, and development commands.
-- [SECURITY.md](SECURITY.md) defines the vulnerability-reporting process, supported release, and security scope.
+- [SECURITY.md](SECURITY.md) defines the vulnerability-reporting process, supported release, security scope, and automated security scanning.
 - [LICENSE](LICENSE) defines the GNU General Public License v3.0-or-later terms.
