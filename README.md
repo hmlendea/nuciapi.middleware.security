@@ -1,6 +1,7 @@
 [![Donate](https://img.shields.io/badge/-%E2%99%A5%20Donate-%23ff69b4)](https://hmlendea.go.ro/funding)
 [![Latest Release](https://img.shields.io/github/v/release/hmlendea/nuciapi.middleware.security)](https://github.com/hmlendea/nuciapi.middleware.security/releases/latest)
 [![Build Status](https://github.com/hmlendea/nuciapi.middleware.security/actions/workflows/dotnet.yml/badge.svg)](https://github.com/hmlendea/nuciapi.middleware.security/actions/workflows/dotnet.yml)
+[![Security Scan](https://github.com/hmlendea/nuciapi.middleware.security/actions/workflows/security.yml/badge.svg)](https://github.com/hmlendea/nuciapi.middleware.security/actions/workflows/security.yml)
 [![NuGet](https://img.shields.io/nuget/v/NuciAPI.Middleware.Security)](https://nuget.org/packages/NuciAPI.Middleware.Security)
 [![License](https://img.shields.io/github/license/hmlendea/nuciapi.middleware.security)](https://github.com/hmlendea/nuciapi.middleware.security/blob/master/LICENSE)
 
@@ -171,6 +172,8 @@ dotnet test NuciAPI.Middleware.Security.sln
 ### Continuous Integration
 
 The [.NET workflow](./.github/workflows/dotnet.yml) restores dependencies, compiles the solution, and executes the tests for pushes and pull requests targeting `master`.
+
+The [Security workflow](./.github/workflows/security.yml) runs vulnerability scans and CodeQL analysis on pushes, pull requests, and a weekly schedule.
 
 ### Release
 
